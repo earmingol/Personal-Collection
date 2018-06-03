@@ -1,7 +1,13 @@
 # coding: utf-8
 import sys
 
-operation = 'min'  # it could be an argument for the script either 'max or min'.
+import argparse
+
+parser = argparse.ArgumentParser(description='Solution for optimizing the cost from selecting one company for each type of product. Each company could be picked once.')
+parser.add_argument('--optimization', metavar="", dest="operation", default="min", help="'min' for Minimization and 'max' for Maximization (without quotes)")
+args = parser.parse_args()
+
+operation = args.operation
 
 def backtracking(operation, variables, visited, optimum, data, levels, sons, depth):
     for son in sons:
