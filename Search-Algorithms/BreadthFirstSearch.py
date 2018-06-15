@@ -1,4 +1,5 @@
 # coding: utf-8
+# Author: Erick Armingol
 # BFS with recursive function to solve a puzzle
 
 from TreeStructures import Node
