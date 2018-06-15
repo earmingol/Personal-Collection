@@ -9,13 +9,13 @@ args = parser.parse_args()
 
 operation = args.operation
 
-def backtracking(operation, variables, visited, optimum, data, levels, sons, depth):
-    for son in sons:
-        if son not in visited:
-            variables[depth] = data[levels[depth]][son]
-            visited2 = visited + [son]
+def backtracking(operation, variables, visited, optimum, data, levels, children, depth):
+    for child in children:
+        if child not in visited:
+            variables[depth] = data[levels[depth]][child]
+            visited2 = visited + [child]
             if depth < len(levels) - 1:
-                optimum = backtracking(operation, variables[:], visited2, optimum, data, levels, sons, depth + 1)
+                optimum = backtracking(operation, variables[:], visited2, optimum, data, levels, children, depth + 1)
             else:
                 sol = evaluate_solution(variables)
                 if operation == 'max':
