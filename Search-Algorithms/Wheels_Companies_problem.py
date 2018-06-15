@@ -1,4 +1,6 @@
 # coding: utf-8
+# Author: Erick Armingol
+# Exercise for book "Inteligencia Artificial - Fundamentos, práctica y aplicaciones" by Alberto García Serrano
 import sys
 
 import argparse
