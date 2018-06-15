@@ -22,7 +22,7 @@ def recursive_BFS(solution, border_list, visited_nodes):
         children = [L_move, C_move, R_move]
         node.set_children(children)
         for child in children:
-            if not child.in_list(border_list):
+            if not child.in_list(border_list) and not child.in_list(visited_nodes):
                 border_list.append(child)
         node = recursive_BFS(solution, border_list, visited_nodes)
         return node
