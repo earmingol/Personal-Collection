@@ -1,78 +1,80 @@
 # coding: utf-8
-# PLE con backtracking
+# Author: Erick Armingol
+# Integer Linear Programming with backtracking
+
 import numpy as np
 
 # Display settings for decimals
 float_formatter = lambda x: "%.2f" % x # Display 2 decimals
-np.set_printoptions(formatter={'float_kind':float_formatter}) #Set to numpy arrays
+np.set_printoptions(formatter={'float_kind':float_formatter}) #Set format of numpy-arrays
 
 
 class Metabolic_ILP():
     def __init__(self, S, c, lb, ub, range_steps = 1.0):
         self.V = [0 for v in range(len(S[0]))]  # Rnxs velocities
-        self.inicial = [0 for v in range(len(S[0]))]
+        self.initial = [0 for v in range(len(S[0]))]
         self.S = S  ############ Add checker if len(S[0]) == len(V)
         self.c = c  ############ Add checker if len(c) == len(V)
         self.range_steps = range_steps
-        self.rango_variables = []
+        self.variables_range = []
         count = 0
         for l, u in zip(lb, ub):
             if u >l:
-                self.rango_variables.append((l, u))
+                self.variables_range.append((l, u))
             elif u == l:
-                self.inicial[count] = u
+                self.initial[count] = u
                 self.V[count] = u
-                self.rango_variables.append((l, u))
+                self.variables_range.append((l, u))
             else:
                 print("Upper bound is lower than Lower bound for Position: ", count)
                 print("Bounds were swapped to avoid errors")
-                self.rango_variables.append((u, l))
+                self.variables_range.append((u, l))
             count += 1
         #optimo = tuple(self.optimo)
-        self.profundidad = 0
+        self.depth = 0
         self.solution_space = []
-        self.x = self.backtracking(self.V[:], self.rango_variables, self.inicial, self.profundidad)
+        self.x = self.backtracking(self.V[:], self.variables_range, self.initial, self.depth)
     
-    def backtracking(self, variables, rango_variables, optimo, profundidad):
-        min = rango_variables[profundidad][0]
-        max = rango_variables[profundidad][1]
+    def backtracking(self, variables, variables_range, optimum, depth):
+        min = variables_range[depth][0]
+        max = variables_range[depth][1]
         evaluation_list = np.arange(min, max + self.range_steps, self.range_steps).tolist()
         for v in evaluation_list:
-            variables[profundidad] = v
-            if profundidad < len(variables) - 1:
-                if not self.es_completable(variables):  # Es no completable si incumple alguna restricción, probar otros valores para otras variables
-                    optimo = self.backtracking(variables[:], rango_variables, optimo, profundidad + 1)
-                else:   # Si cumple, es del espacio de soluciones
-                    sol = self.evalua_solucion(variables)
+            variables[depth] = v
+            if depth < len(variables) - 1:
+                if not self.if_completable(variables):  # not complateble if at least one constraint is not met
+                    optimum = self.backtracking(variables[:], variables_range, optimum, depth + 1)
+                else:   # if completable, it may be of the solution space
+                    sol = self.evaluate_solution(variables)
                     check_visit = tuple(variables)
-                    # Si no fue visitado, agregar a espacio de soluciones
+                    # if not visited, add to solution space
                     if not check_visit in self.solution_space:
                         opt_list = [variable for variable in variables]
                         solution = tuple(opt_list)
                         self.solution_space.append(solution)
-                        # Evaluar si mejora la solucion respecto al antiguo optimo
-                        if sol > self.evalua_solucion(optimo):
-                            optimo = solution
-                            optimo = self.backtracking(variables[:], rango_variables, optimo, profundidad + 1)
+                        # evaluate if this solution is better than previous optimum
+                        if sol > self.evaluate_solution(optimum):
+                            optimum = solution
+                            optimum = self.backtracking(variables[:], variables_range, optimum, depth + 1)
             else:
-                # estamos en una hoja, comprobamos solución
-                sol = self.evalua_solucion(variables)
+                # we are in a leaf, check solution
+                sol = self.evaluate_solution(variables)
                 check_visit = tuple(variables)
-                if self.es_completable(variables) and not check_visit in self.solution_space:
+                if self.if_completable(variables) and not check_visit in self.solution_space:
                     opt_list = [variable for variable in variables]
                     solution = tuple(opt_list)
                     self.solution_space.append(solution)
-                    if sol > self.evalua_solucion(solution):
-                        optimo = solution
-        return optimo
+                    if sol > self.evaluate_solution(solution):
+                        optimum = solution
+        return optimum
 
-    def evalua_solucion(self, variables):
+    def evaluate_solution(self, variables):
         val = 0.0
         for i in range(len(variables)):
             val += self.c[i] * variables[i]
         return val
 
-    def es_completable(self, variables):
+    def if_completable(self, variables):
         v_values = []
         for j in range(len(self.S)):  # For each metabolite
             aux_value = 0.0
@@ -108,4 +110,4 @@ if __name__ == "__main__":
     print FBA.solution_space
 
     for vertex in FBA.solution_space:
-        print vertex, " valor Z = ", FBA.evalua_solucion(vertex)
+        print vertex, " valor Z = ", FBA.evaluate_solution(vertex)

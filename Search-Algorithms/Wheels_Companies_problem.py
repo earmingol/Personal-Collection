@@ -20,15 +20,13 @@ def backtracking(operation, variables, visited, optimum, data, levels, children,
                 optimum = backtracking(operation, variables[:], visited2, optimum, data, levels, children, depth + 1)
             else:
                 sol = evaluate_solution(variables)
-                if operation == 'max':
-                    if sol > evaluate_solution(optimum[0]):
-                        optimum[0] = variables
-                        optimum[1] = visited2
-                elif operation == 'min':
-                    if sol < evaluate_solution(optimum[0]):
-                        optimum[0] = variables
-                        optimum[1] = visited2
-
+                if operation == 'max': opt_coeff = 1.0
+                elif operation == 'min': opt_coeff = -1.0
+                else: opt_coeff = 1.0  # Assuming that the problem is a maximization
+                # Solution is better than optimum?
+                if (opt_coeff * sol) > (opt_coeff * evaluate_solution(optimum[0])):
+                    optimum[0] = variables
+                    optimum[1] = visited2
     return optimum
 
 def evaluate_solution(variables):
@@ -52,6 +50,8 @@ if __name__ == "__main__":
         optimum = [[-1*sys.maxint for var in variables], []]
     elif operation == 'min':
         optimum = [[sys.maxint for var in variables], []]
+    else:
+        optimum = [[-1 * sys.maxint for var in variables], []] # Assuming that the problem is a maximization
     optimal_solution = backtracking(operation, variables, visited, optimum, data, type_of_wheels, companies, depth)
     print optimal_solution[0]
     print "Total: ", sum(optimal_solution[0])
