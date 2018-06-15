@@ -1,4 +1,5 @@
 # coding: utf-8
+# Based on the book "Inteligencia Artificial - Fundamentos, práctica y aplicaciones"
 
 class Node():
     def __init__(self, data, id = None):
