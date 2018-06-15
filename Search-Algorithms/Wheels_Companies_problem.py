@@ -5,7 +5,7 @@ import sys
 
 import argparse
 
-parser = argparse.ArgumentParser(description='Solution for optimizing the cost from selecting one company for each type of product. Each company could be picked once.')
+parser = argparse.ArgumentParser(description='Optimal solution for the cost of selecting one company for each type of product. Each company could be picked once.')
 parser.add_argument('--optimization', metavar="", dest="operation", default="min", help="'min' for Minimization and 'max' for Maximization (without quotes)")
 args = parser.parse_args()
 
