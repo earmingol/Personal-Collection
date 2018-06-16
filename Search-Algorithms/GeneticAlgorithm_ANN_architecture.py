@@ -244,15 +244,17 @@ def genetic_algorithm_ANN(model,
             population = population + mutated_new_chromosomes
             population_evaluation = population_evaluation + new_evaluation
             population, population_evaluation = delete_worst_chromosomes(population, population_evaluation, len(new_chromosomes))
-        mean, std = convergence(population_evaluation)
-        best = best_chromosome(population, population_evaluation)
-        results.append((generation, mean, std, abs(std/mean), best))
+
         if generation >= max_generations:
             solved = True
 
+        mean, std = convergence(population_evaluation)
         if abs(std/mean) <= coeff_variation_to_converge:
             print "**POPULATION CONVERGED!**"
             solved = True
+
+        best = best_chromosome(population, population_evaluation)
+        results.append((generation, mean, std, abs(std/mean), best))
     labels = ['Generation', 'Mean', 'Std', 'CV', 'Best H']
     df = pd.DataFrame.from_records(results, columns = labels)
     print df
@@ -263,7 +265,7 @@ if __name__ == '__main__':
     start_time = time.time()
 
     import sklearn.datasets
-    data = sklearn.datasets.load_iris() # data have to be a class cointaining the inputs in a self.data and the outputs in self.target
+    data = sklearn.datasets.load_iris()
     X = data['data']
     y = data['target']
 
