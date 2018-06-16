@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import math
 import random
-import sklearn.datasets
+import time
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import cross_val_score
 
@@ -228,14 +228,14 @@ def genetic_algorithm_ANN(model,
     solved = False
     population = initial_population(max_population, max_hidden_layers, max_neurons_per_layer)
     generation = 0
-    print "Calculating values for generation ", generation
+    print "Calculating values for generation ", generation, " out of ", max_generations
     population_evaluation = evaluate_population(population, model, X, y, scoring, kfold, n_jobs)
     mean, std = convergence(population_evaluation)
     best = best_chromosome(population, population_evaluation)
     results = [(generation, mean, std, abs(std/mean), best)]
     while not solved:
         generation += 1
-        print "Calculating values for generation ", generation
+        print "Calculating values for generation ", generation, " out of ", max_generations
         for i in range(int(len(population)/2)):
             chromosome1, chromosome2 = select_parents(population, population_evaluation)
             new_chromosomes = chromosomal_crossover(chromosome1, chromosome2, max_hidden_layers, max_neurons_per_layer)
@@ -260,6 +260,9 @@ def genetic_algorithm_ANN(model,
 
 
 if __name__ == '__main__':
+    start_time = time.time()
+
+    import sklearn.datasets
     data = sklearn.datasets.load_iris() # data have to be a class cointaining the inputs in a self.data and the outputs in self.target
     X = data['data']
     y = data['target']
@@ -272,7 +275,7 @@ if __name__ == '__main__':
     scoring = 'accuracy'
     max_generations = 10
     max_population = 30
-    mutation_rate = 0.8
+    mutation_rate = 0.2
     coeff_variation = 0.02
     H = genetic_algorithm_ANN(model,
                               X,
@@ -286,3 +289,4 @@ if __name__ == '__main__':
                               mutation_rate,
                               coeff_variation,
                               n_jobs = -1)
+    print("--- The GA took %s seconds to complete the analysis ---" % int(time.time() - start_time))
