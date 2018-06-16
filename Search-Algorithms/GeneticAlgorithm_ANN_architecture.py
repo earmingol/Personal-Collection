@@ -56,22 +56,25 @@ def evaluate_population(data, population, model, scoring = None, kfold = 5, n_jo
 
 def select_parents(population, population_evaluation):
     evaluations = []
-    for ev in population_evaluation:    # Check if scoring returns positive values
-        if ev[0] > 0: evaluations.append(ev[0])
-        else: evaluations.append(-1 * ev[0])
+    neg = False
+    if population_evaluation[0] < 0: # Check if scoring returns negative values
+        neg = True
+    for ev in population_evaluation:
+        if neg: evaluations.append(abs(1.0/ev[0]))
+        else: evaluations.append(ev[0])
     sorted_population = pd.Series(data=population, index=evaluations).sort_index().tolist()
     sorted_evaluations = sorted(evaluations, key=int)
-    sum = np.nansum(np.asarray(evaluations))
+    sum = abs(np.nansum(np.asarray(evaluations)))
     chr1_index = random.uniform(0, sum)
     chr2_index = random.uniform(0, sum)
     accum_sum = 0
     for i in range(len(sorted_evaluations)):
-        accum_sum += sorted_evaluations[i]
+        accum_sum += abs(sorted_evaluations[i])
         if chr1_index < accum_sum:
             chromosome1 = sorted_population[i]
             break
     for i in range(len(sorted_evaluations)):
-        accum_sum += sorted_evaluations[i]
+        accum_sum += abs(sorted_evaluations[i])
         if chr2_index < accum_sum:
             chromosome2 = sorted_population[i]
             break
@@ -158,8 +161,7 @@ def mutation(chromosomes, mutation_rate, max_neurons_per_layer):
 def delete_worst_chromosomes(population, population_evaluation, number_of_new_chromosomes):
     evaluations = []
     for ev in population_evaluation:    # Check if scoring returns positive values
-        if ev[0] > 0: evaluations.append(ev[0])
-        else: evaluations.append(-1 * ev[0])
+        evaluations.append(ev[0])
     sorted_population = pd.Series(data=population, index=evaluations).sort_index().tolist()
     sorted_evaluations = pd.Series(data=population_evaluation, index=evaluations).sort_index().tolist()
     count = 0
@@ -177,8 +179,7 @@ def convergence(population_evaluation):
 def best_chromosome(population, population_evaluation):
     evaluations = []
     for ev in population_evaluation:    # Check if scoring returns positive values
-        if ev[0] > 0: evaluations.append(ev[0])
-        else: evaluations.append(-1 * ev[0])
+        evaluations.append(ev[0])
     sorted_population = pd.Series(data=population, index=evaluations).sort_index().tolist()
     individual = sorted_population[-1]
     try:
@@ -206,7 +207,7 @@ def genetic_algorithm_ANN(data,
     population_evaluation = evaluate_population(data, population, model, scoring, kfold, n_jobs)
     mean, std = convergence(population_evaluation)
     best = best_chromosome(population, population_evaluation)
-    results = [(generation, mean, std, std/mean, best)]
+    results = [(generation, mean, std, abs(std/mean), best)]
     while not solved:
         generation += 1
         print "Calculating values for generation ", generation
@@ -220,11 +221,11 @@ def genetic_algorithm_ANN(data,
             population, population_evaluation = delete_worst_chromosomes(population, population_evaluation, len(new_chromosomes))
         mean, std = convergence(population_evaluation)
         best = best_chromosome(population, population_evaluation)
-        results.append((generation, mean, std, std/mean, best))
+        results.append((generation, mean, std, abs(std/mean), best))
         if generation >= max_generations:
             solved = True
 
-        if std/mean <= coeff_variation_to_converge:
+        if abs(std/mean) <= coeff_variation_to_converge:
             solved = True
     labels = ['Generation', 'Mean', 'Std', 'CV', 'Best H']
     df = pd.DataFrame.from_records(results, columns = labels)
@@ -247,7 +248,7 @@ if __name__ == '__main__':
     kfold = 5
     scoring = 'accuracy'
     max_generations = 10
-    max_population = 300
+    max_population = 30
     mutation_rate = 0.1
     coeff_variation = 0.025
     H = genetic_algorithm_ANN(data,
