@@ -20,10 +20,16 @@ def initial_population(max_population, max_hidden_layers, max_neurons_per_layer)
                 NN_arch.append(random.randint(1, max_neurons_per_layer))
             else:   # The followings layers may have no neurons
                 NN_arch.append(random.randint(0, max_neurons_per_layer))
+        # Cut chromosomes until the first zero, to avoid neurons in following layers
+        try : NN_arch = NN_arch[:NN_arch.index(0)]
+        except: NN_arch = NN_arch
+        # Complete max size of architecture
+        while len(NN_arch) < max_hidden_layers:
+            NN_arch.append(0)
         population.append(NN_arch)
     return population
 
-def evaluate_population_unit(individual, model, scoring, kfold):
+def evaluate_population_unit(individual, model, X, y, scoring, kfold):
     ''' Unit to perform parallel computing with pool.map'''
     # Generate architecture for individual
     try:
@@ -31,10 +37,10 @@ def evaluate_population_unit(individual, model, scoring, kfold):
     except:
         H = tuple(individual)
     model.set_params(hidden_layer_sizes = H)
-    scores = cross_val_score(model, data.data, data.target, scoring = scoring, cv = kfold, n_jobs = 1)
+    scores = cross_val_score(model, X, y, scoring = scoring, cv = kfold, n_jobs = 1)
     return (scores.mean(), scores.std())
 
-def evaluate_population(data, population, model, scoring = None, kfold = 5, n_jobs = 1):
+def evaluate_population(population, model, X, y, scoring = None, kfold = 5, n_jobs = 1):
     from contextlib import closing
     from multiprocessing import Pool, cpu_count
     from functools import partial
@@ -49,7 +55,7 @@ def evaluate_population(data, population, model, scoring = None, kfold = 5, n_jo
     else:
         agents = 1
     chunksize = 1
-    fnc = partial(evaluate_population_unit, model = model, scoring = scoring, kfold = kfold)
+    fnc = partial(evaluate_population_unit, model = model, X = X, y = y, scoring = scoring, kfold = kfold)
     with closing(Pool(processes=agents)) as pool:
         parallel_evaluation = pool.map(fnc, population, chunksize)
     return parallel_evaluation
@@ -111,9 +117,10 @@ def chromosomal_crossover(chro1, chro2, max_hidden_layers, max_neurons_per_layer
             new_chro1 = tmp_chro1[:cut_position] + tmp_chro2[cut_position:]
             new_chro2 = tmp_chro2[:cut_position] + tmp_chro1[cut_position:]
             new_chroms = [new_chro1, new_chro2]
+        # Complete max size of architecture
         while len(new_chroms[0]) < max_hidden_layers:
             for chrom in new_chroms: chrom.append(0)
-    #Parents with diff numver of hidden layers
+    #Parents with diff number of hidden layers
     else:
         tmp_chroms = [tmp_chro1, tmp_chro2]
         lens = np.asarray([len(tmp_chro1), len(tmp_chro2)])
@@ -124,6 +131,7 @@ def chromosomal_crossover(chro1, chro2, max_hidden_layers, max_neurons_per_layer
         new_chro1 = min_chro[:cut_position] + max_chro[cut_position:lens[random_index]]
         new_chro2 = max_chro[:cut_position] + min_chro[cut_position:]
         new_chroms = [new_chro1, new_chro2]
+        # Complete max size of architecture
         while len(new_chroms[0]) < max_hidden_layers:
             new_chroms[0].append(0)
         while len(new_chroms[1]) < max_hidden_layers:
@@ -132,25 +140,41 @@ def chromosomal_crossover(chro1, chro2, max_hidden_layers, max_neurons_per_layer
     return new_chromosomes
 
 def mutation(chromosomes, mutation_rate, max_neurons_per_layer):
-    # Select one layer randomly and then add a random number of neurons between 1 and the number to complete the max_neurons_per_layer
     mutated_chromosomes = []
+    deletion_upper_prob = 0.2
+    addition_upper_prob = 0.5
+    # Check each chromosome for mutation
     for chro in chromosomes:
-        p = random.random()
-        if p < mutation_rate:
+        # Check if mutation occurs
+        mutation_prob = random.random()
+        if mutation_prob < mutation_rate:
             try:
                 tmp_chro = chro[:chro.index(0)]
             except:
                 tmp_chro = chro
-            p_chro = random.randint(0, len(tmp_chro)-1)
-            value = tmp_chro[p_chro]
-            r = random.random()
-            if r > 0.5:
-                diff = max_neurons_per_layer - value
-                p_diff = random.randint(0, diff)
-                tmp_chro[p_chro] += p_diff
-            else:
-                p_diff = random.randint(0, value-1)
-                tmp_chro[p_chro] += -1 * p_diff
+            # Select type of mutation
+            type_prob = random.random()
+            if type_prob < deletion_upper_prob: # Prob to mutation in layer (delete one)
+                if len(tmp_chro) == 1:  # If only have one layer, subtract the half number of neurons
+                    tmp_chro[0] = int(np.ceil(tmp_chro[0]/2))
+                else:
+                    # Select which layer to delete
+                    p_chro = random.randint(0, len(tmp_chro) - 1)
+                    tmp_chro.pop(p_chro)
+            else:   # Prob to mutate the number of neurons (add or subtract)
+                # Select which layer to mutate
+                p_chro = random.randint(0, len(tmp_chro) - 1)
+                value = tmp_chro[p_chro]
+                neurons_prob = random.random()
+                # Select if add or subtract neurons
+                if neurons_prob < addition_upper_prob:  # Prob to add neurons
+                    diff = max_neurons_per_layer - value
+                    p_diff = random.randint(0, diff)    # Number of neurons to add
+                    tmp_chro[p_chro] += p_diff
+                else:  # Prob to subtract neurons
+                    p_diff = random.randint(0, value - 1)    # Number of neurons to subtract
+                    tmp_chro[p_chro] += -1 * p_diff
+            # Complete max size of architecture
             while len(tmp_chro) < len(chro):
                 tmp_chro.append(0)
             mutated_chromosomes.append(tmp_chro)
@@ -189,8 +213,9 @@ def best_chromosome(population, population_evaluation):
     return H
 
 
-def genetic_algorithm_ANN(data,
-                          model,
+def genetic_algorithm_ANN(model,
+                          X,
+                          y,
                           max_hidden_layers,
                           max_neurons_per_layer,
                           kfold = 5,
@@ -204,7 +229,7 @@ def genetic_algorithm_ANN(data,
     population = initial_population(max_population, max_hidden_layers, max_neurons_per_layer)
     generation = 0
     print "Calculating values for generation ", generation
-    population_evaluation = evaluate_population(data, population, model, scoring, kfold, n_jobs)
+    population_evaluation = evaluate_population(population, model, X, y, scoring, kfold, n_jobs)
     mean, std = convergence(population_evaluation)
     best = best_chromosome(population, population_evaluation)
     results = [(generation, mean, std, abs(std/mean), best)]
@@ -215,7 +240,7 @@ def genetic_algorithm_ANN(data,
             chromosome1, chromosome2 = select_parents(population, population_evaluation)
             new_chromosomes = chromosomal_crossover(chromosome1, chromosome2, max_hidden_layers, max_neurons_per_layer)
             mutated_new_chromosomes = mutation(new_chromosomes, mutation_rate, max_neurons_per_layer)
-            new_evaluation = evaluate_population(data, mutated_new_chromosomes, model, scoring, kfold, n_jobs)
+            new_evaluation = evaluate_population(mutated_new_chromosomes, model, X, y, scoring, kfold, n_jobs)
             population = population + mutated_new_chromosomes
             population_evaluation = population_evaluation + new_evaluation
             population, population_evaluation = delete_worst_chromosomes(population, population_evaluation, len(new_chromosomes))
@@ -224,23 +249,20 @@ def genetic_algorithm_ANN(data,
         results.append((generation, mean, std, abs(std/mean), best))
         if generation >= max_generations:
             solved = True
-            print "Population converged"
 
         if abs(std/mean) <= coeff_variation_to_converge:
+            print "**POPULATION CONVERGED!**"
             solved = True
     labels = ['Generation', 'Mean', 'Std', 'CV', 'Best H']
     df = pd.DataFrame.from_records(results, columns = labels)
     print df
     return best
 
-class Data():
-    def __init__(self, X, y):
-        self.data = X
-        self.target = y
 
 if __name__ == '__main__':
     data = sklearn.datasets.load_iris() # data have to be a class cointaining the inputs in a self.data and the outputs in self.target
-    data = Data(data['data'], data['target'])
+    X = data['data']
+    y = data['target']
 
     model = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(1,), random_state=1)
 
@@ -250,10 +272,11 @@ if __name__ == '__main__':
     scoring = 'accuracy'
     max_generations = 10
     max_population = 30
-    mutation_rate = 0.1
+    mutation_rate = 0.8
     coeff_variation = 0.02
-    H = genetic_algorithm_ANN(data,
-                              model,
+    H = genetic_algorithm_ANN(model,
+                              X,
+                              y,
                               max_hidden_layers,
                               max_neurons_per_layer,
                               kfold,
