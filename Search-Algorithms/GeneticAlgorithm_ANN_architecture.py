@@ -173,7 +173,7 @@ def delete_worst_chromosomes(population, population_evaluation, number_of_new_ch
 
 def convergence(population_evaluation):
     mean = np.nanmean(np.asarray([ev[0] for ev in population_evaluation]))
-    std = math.sqrt(np.nansum(np.asarray([ev[1]**2 for ev in population_evaluation])))
+    std = math.sqrt(np.nansum(np.asarray([ev[1]**2 for ev in population_evaluation]))/len(population_evaluation))
     return mean, std
 
 def best_chromosome(population, population_evaluation):
