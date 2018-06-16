@@ -224,6 +224,7 @@ def genetic_algorithm_ANN(data,
         results.append((generation, mean, std, abs(std/mean), best))
         if generation >= max_generations:
             solved = True
+            print "Population converged"
 
         if abs(std/mean) <= coeff_variation_to_converge:
             solved = True
@@ -250,7 +251,7 @@ if __name__ == '__main__':
     max_generations = 10
     max_population = 30
     mutation_rate = 0.1
-    coeff_variation = 0.025
+    coeff_variation = 0.02
     H = genetic_algorithm_ANN(data,
                               model,
                               max_hidden_layers,
