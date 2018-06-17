@@ -205,12 +205,13 @@ def best_chromosome(population, population_evaluation):
     for ev in population_evaluation:    # Check if scoring returns positive values
         evaluations.append(ev[0])
     sorted_population = pd.Series(data=population, index=evaluations).sort_index().tolist()
+    sorted_evaluations = pd.Series(data=population_evaluation, index=evaluations).sort_index().tolist()
     individual = sorted_population[-1]
     try:
         H = tuple(individual[:individual.index(0)])
     except:
         H = tuple(individual)
-    return H
+    return H, sorted_evaluations[-1]
 
 
 def genetic_algorithm_ANN(model,
@@ -231,8 +232,8 @@ def genetic_algorithm_ANN(model,
     print "Calculating values for generation ", generation, " out of ", max_generations
     population_evaluation = evaluate_population(population, model, X, y, scoring, kfold, n_jobs)
     mean, std = convergence(population_evaluation)
-    best = best_chromosome(population, population_evaluation)
-    results = [(generation, mean, std, abs(std/mean), best)]
+    best_hyperparameter, best_evaluations = best_chromosome(population, population_evaluation)
+    results = [(generation, mean, std, abs(std/mean), best_hyperparameter, best_evaluations[0], best_evaluations[1])]
     while not solved:
         generation += 1
         print "Calculating values for generation ", generation, " out of ", max_generations
@@ -253,12 +254,12 @@ def genetic_algorithm_ANN(model,
             print "**POPULATION CONVERGED!**"
             solved = True
 
-        best = best_chromosome(population, population_evaluation)
-        results.append((generation, mean, std, abs(std/mean), best))
-    labels = ['Generation', 'Mean', 'Std', 'CV', 'Best H']
+        best_hyperparameter, best_evaluations = best_chromosome(population, population_evaluation)
+        results.append((generation, mean, std, abs(std/mean), best_hyperparameter, best_evaluations[0], best_evaluations[1]))
+    labels = ['Generation', 'Mean', 'Std', 'CV', 'Best H', 'Mean of Best H', 'Std of Best H']
     df = pd.DataFrame.from_records(results, columns = labels)
     print df
-    return best
+    return best_hyperparameter, population, df
 
 
 if __name__ == '__main__':
@@ -279,16 +280,16 @@ if __name__ == '__main__':
     max_population = 30
     mutation_rate = 0.2
     coeff_variation = 0.02
-    H = genetic_algorithm_ANN(model,
-                              X,
-                              y,
-                              max_hidden_layers,
-                              max_neurons_per_layer,
-                              kfold,
-                              scoring,
-                              max_generations,
-                              max_population,
-                              mutation_rate,
-                              coeff_variation,
-                              n_jobs = -1)
+    H, architectures, results = genetic_algorithm_ANN(model,
+                                                      X,
+                                                      y,
+                                                      max_hidden_layers,
+                                                      max_neurons_per_layer,
+                                                      kfold,
+                                                      scoring,
+                                                      max_generations,
+                                                      max_population,
+                                                      mutation_rate,
+                                                      coeff_variation,
+                                                      n_jobs = -1)
     print("--- The GA took %s seconds to complete the analysis ---" % int(time.time() - start_time))
