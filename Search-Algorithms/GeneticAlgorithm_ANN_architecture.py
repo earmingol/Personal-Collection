@@ -9,6 +9,8 @@ import random
 import time
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import cross_val_score
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 
 def initial_population(max_population, max_hidden_layers, max_neurons_per_layer):
@@ -29,7 +31,7 @@ def initial_population(max_population, max_hidden_layers, max_neurons_per_layer)
         population.append(NN_arch)
     return population
 
-def evaluate_population_unit(individual, model, X, y, scoring, kfold):
+def evaluate_population_unit(individual, model, X, y, scoring, kfold, scaler = None):
     ''' Unit to perform parallel computing with pool.map'''
     # Generate architecture for individual
     try:
@@ -37,10 +39,15 @@ def evaluate_population_unit(individual, model, X, y, scoring, kfold):
     except:
         H = tuple(individual)
     model.set_params(hidden_layer_sizes = H)
+    if scaler != None:
+        estimators = []
+        estimators.append(('Scaler', scaler))
+        estimators.append(('Model', model))
+        model = Pipeline(estimators)
     scores = cross_val_score(model, X, y, scoring = scoring, cv = kfold, n_jobs = 1)
     return (scores.mean(), scores.std())
 
-def evaluate_population(population, model, X, y, scoring = None, kfold = 5, n_jobs = 1):
+def evaluate_population(population, model, X, y, scoring = None, kfold = 5, scaler = None, n_jobs = 1):
     from contextlib import closing
     from multiprocessing import Pool, cpu_count
     from functools import partial
@@ -55,7 +62,7 @@ def evaluate_population(population, model, X, y, scoring = None, kfold = 5, n_jo
     else:
         agents = 1
     chunksize = 1
-    fnc = partial(evaluate_population_unit, model = model, X = X, y = y, scoring = scoring, kfold = kfold)
+    fnc = partial(evaluate_population_unit, model = model, X = X, y = y, scoring = scoring, kfold = kfold, scaler = scaler)
     with closing(Pool(processes=agents)) as pool:
         parallel_evaluation = pool.map(fnc, population, chunksize)
     return parallel_evaluation
@@ -220,6 +227,7 @@ def genetic_algorithm_ANN(model,
                           max_hidden_layers,
                           max_neurons_per_layer,
                           kfold = 5,
+                          scaler = None,
                           scoring = None,
                           max_generations = 50,
                           max_population = 10,
@@ -230,7 +238,7 @@ def genetic_algorithm_ANN(model,
     population = initial_population(max_population, max_hidden_layers, max_neurons_per_layer)
     generation = 0
     print "Calculating values for generation ", generation, " out of ", max_generations
-    population_evaluation = evaluate_population(population, model, X, y, scoring, kfold, n_jobs)
+    population_evaluation = evaluate_population(population, model, X, y, scoring, kfold, scaler, n_jobs)
     mean, std = convergence(population_evaluation)
     best_hyperparameter, best_evaluations = best_chromosome(population, population_evaluation)
     results = [(generation, mean, std, abs(std/mean), best_hyperparameter, best_evaluations[0], best_evaluations[1])]
@@ -241,7 +249,7 @@ def genetic_algorithm_ANN(model,
             chromosome1, chromosome2 = select_parents(population, population_evaluation)
             new_chromosomes = chromosomal_crossover(chromosome1, chromosome2, max_hidden_layers, max_neurons_per_layer)
             mutated_new_chromosomes = mutation(new_chromosomes, mutation_rate, max_neurons_per_layer)
-            new_evaluation = evaluate_population(mutated_new_chromosomes, model, X, y, scoring, kfold, n_jobs)
+            new_evaluation = evaluate_population(mutated_new_chromosomes, model, X, y, scoring, kfold, scaler, n_jobs)
             population = population + mutated_new_chromosomes
             population_evaluation = population_evaluation + new_evaluation
             population, population_evaluation = delete_worst_chromosomes(population, population_evaluation, len(new_chromosomes))
@@ -275,6 +283,7 @@ if __name__ == '__main__':
     max_hidden_layers = 4
     max_neurons_per_layer = 10
     kfold = 5
+    scaler = None   # you can try StandardScaler() instead of None
     scoring = 'accuracy'
     max_generations = 10
     max_population = 30
@@ -286,6 +295,7 @@ if __name__ == '__main__':
                                                       max_hidden_layers,
                                                       max_neurons_per_layer,
                                                       kfold,
+                                                      scaler,
                                                       scoring,
                                                       max_generations,
                                                       max_population,
