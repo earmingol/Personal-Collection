@@ -296,13 +296,16 @@ def genetic_algorithm_ANN(model,
 if __name__ == '__main__':
     start_time = time.time()
 
+    # Data from example
     import sklearn.datasets
     data = sklearn.datasets.load_iris()
     X = data['data']
     y = data['target']
 
+    # Model algorithm
     model = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(1,), random_state=1)
 
+    # GA parameters
     max_hidden_layers = 4
     max_neurons_per_layer = 10
     kfold = 5
