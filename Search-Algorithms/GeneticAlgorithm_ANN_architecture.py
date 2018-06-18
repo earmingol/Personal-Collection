@@ -18,36 +18,43 @@ def initial_population(max_population, max_hidden_layers, max_neurons_per_layer)
     for i in range(max_population):
         NN_arch = []
         for j in range(max_hidden_layers):
-            if j == 0: # To avoid an architecture without neurons in the first hidden layer
+            if j == 0:  # To avoid an architecture without neurons in the first hidden layer
                 NN_arch.append(random.randint(1, max_neurons_per_layer))
             else:   # The followings layers may have no neurons
-                NN_arch.append(random.randint(0, max_neurons_per_layer))
+                prob = random.random()
+                # To favor an equivalent number of individuals with different number of layers in population
+                if prob < (1.0 / max_hidden_layers):
+                    NN_arch.append(0)
+                else:
+                    NN_arch.append(random.randint(0, max_neurons_per_layer))
         # Cut chromosomes until the first zero, to avoid neurons in following layers
-        try : NN_arch = NN_arch[:NN_arch.index(0)]
-        except: NN_arch = NN_arch
+        try:
+            NN_arch = NN_arch[:NN_arch.index(0)]
+        except:
+            NN_arch = NN_arch
         # Complete max size of architecture
         while len(NN_arch) < max_hidden_layers:
             NN_arch.append(0)
         population.append(NN_arch)
     return population
 
-def evaluate_population_unit(individual, model, X, y, scoring, kfold, scaler = None):
+def evaluate_population_unit(individual, model, X, y, scoring, kfold, scaler=None):
     ''' Unit to perform parallel computing with pool.map'''
     # Generate architecture for individual
     try:
         H = tuple(individual[:individual.index(0)])
     except:
         H = tuple(individual)
-    model.set_params(hidden_layer_sizes = H)
+    model.set_params(hidden_layer_sizes=H)
     if scaler != None:
         estimators = []
         estimators.append(('Scaler', scaler))
         estimators.append(('Model', model))
         model = Pipeline(estimators)
-    scores = cross_val_score(model, X, y, scoring = scoring, cv = kfold, n_jobs = 1)
+    scores = cross_val_score(model, X, y, scoring=scoring, cv=kfold, n_jobs=1)
     return (scores.mean(), scores.std())
 
-def evaluate_population(population, model, X, y, scoring = None, kfold = 5, scaler = None, n_jobs = 1):
+def evaluate_population(population, model, X, y, scoring=None, kfold=5, scaler=None, n_jobs=1):
     from contextlib import closing
     from multiprocessing import Pool, cpu_count
     from functools import partial
@@ -62,7 +69,7 @@ def evaluate_population(population, model, X, y, scoring = None, kfold = 5, scal
     else:
         agents = 1
     chunksize = 1
-    fnc = partial(evaluate_population_unit, model = model, X = X, y = y, scoring = scoring, kfold = kfold, scaler = scaler)
+    fnc = partial(evaluate_population_unit, model=model, X=X, y=y, scoring=scoring, kfold=kfold, scaler=scaler)
     with closing(Pool(processes=agents)) as pool:
         parallel_evaluation = pool.map(fnc, population, chunksize)
     return parallel_evaluation
@@ -70,11 +77,13 @@ def evaluate_population(population, model, X, y, scoring = None, kfold = 5, scal
 def select_parents(population, population_evaluation):
     evaluations = []
     neg = False
-    if population_evaluation[0] < 0: # Check if scoring returns negative values
+    if population_evaluation[0] < 0:  # Check if scoring returns negative values
         neg = True
     for ev in population_evaluation:
-        if neg: evaluations.append(abs(1.0/ev[0]))
-        else: evaluations.append(ev[0])
+        if neg:
+            evaluations.append(abs(1.0 / ev[0]))
+        else:
+            evaluations.append(ev[0])
     sorted_population = pd.Series(data=population, index=evaluations).sort_index().tolist()
     sorted_evaluations = sorted(evaluations, key=int)
     sum = abs(np.nansum(np.asarray(evaluations)))
@@ -107,34 +116,40 @@ def chromosomal_crossover(chro1, chro2, max_hidden_layers, max_neurons_per_layer
 
     # Parents with equal number of hidden layers
     if len(tmp_chro1) == len(tmp_chro2):
-        # If number of hidden layers = 1 -> New chrom is the sum of the neurons of parents
+        # If number of hidden layers = 1
         if len(tmp_chro1) == 1:
             new_chro = np.zeros(len(chro1))
             new_chro = new_chro.tolist()
-            new_chro[0] = chro1[0] + chro2[0]
-            if new_chro[0] > max_neurons_per_layer: # Not surpass the max number of neurons
-                extra_neurons = new_chro[0] - max_neurons_per_layer
-                new_chro[0] = max_neurons_per_layer
-                try: new_chro[1] = extra_neurons
-                except: new_chro.append(extra_neurons)
+            if max_hidden_layers == 1: # For max hidden layers = 1 -> New chrom is the randomly-weighted mean of the neurons of parents
+                coeff = random.random()
+                new_chro[0] = int((coeff * chro1[0] + (1 - coeff) * chro2[0]))
+            else:
+                new_chro[0] = chro1[0] + chro2[0]   # For max hidden layers > 1 -> New chrom is the sum of the neurons of parents
+                if new_chro[0] > max_neurons_per_layer: # Not surpass the max number of neurons
+                    extra_neurons = new_chro[0] - max_neurons_per_layer
+                    new_chro[0] = max_neurons_per_layer
+                    try:
+                        new_chro[1] = extra_neurons
+                    except:
+                        new_chro.append(extra_neurons)
             new_chroms = [new_chro]
         # If number of hidden layers > 1 -> crossover
         else:
-            cut_position = random.randint(1, len(tmp_chro1)-1)
+            cut_position = random.randint(1, len(tmp_chro1) - 1)
             new_chro1 = tmp_chro1[:cut_position] + tmp_chro2[cut_position:]
             new_chro2 = tmp_chro2[:cut_position] + tmp_chro1[cut_position:]
             new_chroms = [new_chro1, new_chro2]
         # Complete max size of architecture
         while len(new_chroms[0]) < max_hidden_layers:
             for chrom in new_chroms: chrom.append(0)
-    #Parents with diff number of hidden layers
+    # Parents with diff number of hidden layers
     else:
         tmp_chroms = [tmp_chro1, tmp_chro2]
         lens = np.asarray([len(tmp_chro1), len(tmp_chro2)])
-        random_index = random.randrange(0, len(lens))   # Select new chroms size randomly
+        random_index = random.randrange(0, len(lens))  # Select new chroms size randomly
         min_chro = tmp_chroms.pop(int(np.argmin(lens)))
         max_chro = tmp_chroms.pop()
-        cut_position = random.randint(0, len(min_chro)-1)
+        cut_position = random.randint(0, len(min_chro) - 1)
         new_chro1 = min_chro[:cut_position] + max_chro[cut_position:lens[random_index]]
         new_chro2 = max_chro[:cut_position] + min_chro[cut_position:]
         new_chroms = [new_chro1, new_chro2]
@@ -161,14 +176,14 @@ def mutation(chromosomes, mutation_rate, max_neurons_per_layer):
                 tmp_chro = chro
             # Select type of mutation
             type_prob = random.random()
-            if type_prob < deletion_upper_prob: # Prob to mutation in layer (delete one)
+            if type_prob < deletion_upper_prob:  # Prob to mutation in layer (delete one)
                 if len(tmp_chro) == 1:  # If only have one layer, subtract the half number of neurons
-                    tmp_chro[0] = int(np.ceil(tmp_chro[0]/2))
+                    tmp_chro[0] = int(np.ceil(tmp_chro[0] / 2))
                 else:
                     # Select which layer to delete
                     p_chro = random.randint(0, len(tmp_chro) - 1)
                     tmp_chro.pop(p_chro)
-            else:   # Prob to mutate the number of neurons (add or subtract)
+            else:  # Prob to mutate the number of neurons (add or subtract)
                 # Select which layer to mutate
                 p_chro = random.randint(0, len(tmp_chro) - 1)
                 value = tmp_chro[p_chro]
@@ -176,10 +191,10 @@ def mutation(chromosomes, mutation_rate, max_neurons_per_layer):
                 # Select if add or subtract neurons
                 if neurons_prob < addition_upper_prob:  # Prob to add neurons
                     diff = max_neurons_per_layer - value
-                    p_diff = random.randint(0, diff)    # Number of neurons to add
+                    p_diff = random.randint(0, diff)  # Number of neurons to add
                     tmp_chro[p_chro] += p_diff
                 else:  # Prob to subtract neurons
-                    p_diff = random.randint(0, value - 1)    # Number of neurons to subtract
+                    p_diff = random.randint(0, value - 1)  # Number of neurons to subtract
                     tmp_chro[p_chro] += -1 * p_diff
             # Complete max size of architecture
             while len(tmp_chro) < len(chro):
@@ -191,7 +206,7 @@ def mutation(chromosomes, mutation_rate, max_neurons_per_layer):
 
 def delete_worst_chromosomes(population, population_evaluation, number_of_new_chromosomes):
     evaluations = []
-    for ev in population_evaluation:    # Check if scoring returns positive values
+    for ev in population_evaluation:  # Check if scoring returns positive values
         evaluations.append(ev[0])
     sorted_population = pd.Series(data=population, index=evaluations).sort_index().tolist()
     sorted_evaluations = pd.Series(data=population_evaluation, index=evaluations).sort_index().tolist()
@@ -202,14 +217,16 @@ def delete_worst_chromosomes(population, population_evaluation, number_of_new_ch
         count += 1
     return sorted_population, sorted_evaluations
 
+
 def convergence(population_evaluation):
     mean = np.nanmean(np.asarray([ev[0] for ev in population_evaluation]))
-    std = math.sqrt(np.nansum(np.asarray([ev[1]**2 for ev in population_evaluation]))/len(population_evaluation))
+    std = math.sqrt(np.nansum(np.asarray([ev[1] ** 2 for ev in population_evaluation])) / len(population_evaluation))
     return mean, std
+
 
 def best_chromosome(population, population_evaluation):
     evaluations = []
-    for ev in population_evaluation:    # Check if scoring returns positive values
+    for ev in population_evaluation:  # Check if scoring returns positive values
         evaluations.append(ev[0])
     sorted_population = pd.Series(data=population, index=evaluations).sort_index().tolist()
     sorted_evaluations = pd.Series(data=population_evaluation, index=evaluations).sort_index().tolist()
@@ -226,14 +243,14 @@ def genetic_algorithm_ANN(model,
                           y,
                           max_hidden_layers,
                           max_neurons_per_layer,
-                          kfold = 5,
-                          scaler = None,
-                          scoring = None,
-                          max_generations = 50,
-                          max_population = 10,
-                          mutation_rate = 0.1,
-                          coeff_variation_to_converge = 0.01,
-                          n_jobs = 1):
+                          kfold=5,
+                          scaler=None,
+                          scoring=None,
+                          max_generations=50,
+                          max_population=10,
+                          mutation_rate=0.1,
+                          coeff_variation_to_converge=0.01,
+                          n_jobs=1):
     solved = False
     population = initial_population(max_population, max_hidden_layers, max_neurons_per_layer)
     generation = 0
@@ -241,11 +258,11 @@ def genetic_algorithm_ANN(model,
     population_evaluation = evaluate_population(population, model, X, y, scoring, kfold, scaler, n_jobs)
     mean, std = convergence(population_evaluation)
     best_hyperparameter, best_evaluations = best_chromosome(population, population_evaluation)
-    results = [(generation, mean, std, abs(std/mean), best_hyperparameter, best_evaluations[0], best_evaluations[1])]
+    results = [(generation, mean, std, abs(std / mean), best_hyperparameter, best_evaluations[0], best_evaluations[1])]
     while not solved:
         generation += 1
         print "Calculating values for generation ", generation, " out of ", max_generations
-        for i in range(int(len(population)/2)):
+        for i in range(int(len(population) / 2)):
             chromosome1, chromosome2 = select_parents(population, population_evaluation)
             new_chromosomes = chromosomal_crossover(chromosome1, chromosome2, max_hidden_layers, max_neurons_per_layer)
             mutated_new_chromosomes = mutation(new_chromosomes, mutation_rate, max_neurons_per_layer)
@@ -258,14 +275,14 @@ def genetic_algorithm_ANN(model,
             solved = True
 
         mean, std = convergence(population_evaluation)
-        if abs(std/mean) <= coeff_variation_to_converge:
+        if abs(std / mean) <= coeff_variation_to_converge:
             print "**POPULATION CONVERGED!**"
             solved = True
 
         best_hyperparameter, best_evaluations = best_chromosome(population, population_evaluation)
-        results.append((generation, mean, std, abs(std/mean), best_hyperparameter, best_evaluations[0], best_evaluations[1]))
+        results.append((generation, mean, std, abs(std / mean), best_hyperparameter, best_evaluations[0], best_evaluations[1]))
     labels = ['Generation', 'Mean', 'Std', 'CV', 'Best H', 'Mean of Best H', 'Std of Best H']
-    df = pd.DataFrame.from_records(results, columns = labels)
+    df = pd.DataFrame.from_records(results, columns=labels)
     print df
     return best_hyperparameter, population, df
 
@@ -286,7 +303,7 @@ if __name__ == '__main__':
     scaler = None   # you can try StandardScaler() instead of None
     scoring = 'accuracy'
     max_generations = 10
-    max_population = 30
+    max_population = 100
     mutation_rate = 0.2
     coeff_variation = 0.02
     H, architectures, results = genetic_algorithm_ANN(model,
