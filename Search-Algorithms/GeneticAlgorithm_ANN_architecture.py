@@ -38,6 +38,7 @@ def initial_population(max_population, max_hidden_layers, max_neurons_per_layer)
         population.append(NN_arch)
     return population
 
+
 def evaluate_population_unit(individual, model, X, y, scoring, kfold, scaler=None):
     ''' Unit to perform parallel computing with pool.map'''
     # Generate architecture for individual
@@ -53,6 +54,7 @@ def evaluate_population_unit(individual, model, X, y, scoring, kfold, scaler=Non
         model = Pipeline(estimators)
     scores = cross_val_score(model, X, y, scoring=scoring, cv=kfold, n_jobs=1)
     return (scores.mean(), scores.std())
+
 
 def evaluate_population(population, model, X, y, scoring=None, kfold=5, scaler=None, n_jobs=1):
     from contextlib import closing
@@ -73,6 +75,7 @@ def evaluate_population(population, model, X, y, scoring=None, kfold=5, scaler=N
     with closing(Pool(processes=agents)) as pool:
         parallel_evaluation = pool.map(fnc, population, chunksize)
     return parallel_evaluation
+
 
 def select_parents(population, population_evaluation):
     evaluations = []
@@ -101,6 +104,7 @@ def select_parents(population, population_evaluation):
             chromosome2 = sorted_population[i]
             break
     return chromosome1, chromosome2
+
 
 def chromosomal_crossover(chro1, chro2, max_hidden_layers, max_neurons_per_layer):
     new_chromosomes = []
@@ -161,6 +165,7 @@ def chromosomal_crossover(chro1, chro2, max_hidden_layers, max_neurons_per_layer
     new_chromosomes = new_chromosomes + new_chroms
     return new_chromosomes
 
+
 def mutation(chromosomes, mutation_rate, max_neurons_per_layer):
     mutated_chromosomes = []
     deletion_upper_prob = 0.2
@@ -203,6 +208,7 @@ def mutation(chromosomes, mutation_rate, max_neurons_per_layer):
         else:
             mutated_chromosomes.append(chro)
     return mutated_chromosomes
+
 
 def delete_worst_chromosomes(population, population_evaluation, number_of_new_chromosomes):
     evaluations = []
