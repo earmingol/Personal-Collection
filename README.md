@@ -1,2 +1,2 @@
 # Personal-Collection
-Codes to test different algorithms
+Codes to implement and test different algorithms
