@@ -11,5 +11,7 @@ conda env create -n EnvName --file Conda-Environments/EnvName.yml
 To export a new conda environment, run:
 
 ```bash
+conda activate EnvName
 conda env export --no-builds | grep -v "prefix" > Conda-Environments/EnvName.yml
+conda deactivate
 ```
