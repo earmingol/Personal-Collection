@@ -260,14 +260,14 @@ def genetic_algorithm_ANN(model,
     solved = False
     population = initial_population(max_population, max_hidden_layers, max_neurons_per_layer)
     generation = 0
-    print "Calculating values for generation ", generation, " out of ", max_generations
+    print("Calculating values for generation ", generation, " out of ", max_generations)
     population_evaluation = evaluate_population(population, model, X, y, scoring, kfold, scaler, n_jobs)
     mean, std = convergence(population_evaluation)
     best_hyperparameter, best_evaluations = best_chromosome(population, population_evaluation)
     results = [(generation, mean, std, abs(std / mean), best_hyperparameter, best_evaluations[0], best_evaluations[1])]
     while not solved:
         generation += 1
-        print "Calculating values for generation ", generation, " out of ", max_generations
+        print("Calculating values for generation ", generation, " out of ", max_generations)
         for i in range(int(len(population) / 2)):
             chromosome1, chromosome2 = select_parents(population, population_evaluation)
             new_chromosomes = chromosomal_crossover(chromosome1, chromosome2, max_hidden_layers, max_neurons_per_layer)
@@ -282,14 +282,14 @@ def genetic_algorithm_ANN(model,
 
         mean, std = convergence(population_evaluation)
         if abs(std / mean) <= coeff_variation_to_converge:
-            print "**POPULATION CONVERGED!**"
+            print("**POPULATION CONVERGED!**")
             solved = True
 
         best_hyperparameter, best_evaluations = best_chromosome(population, population_evaluation)
         results.append((generation, mean, std, abs(std / mean), best_hyperparameter, best_evaluations[0], best_evaluations[1]))
     labels = ['Generation', 'Mean', 'Std', 'CV', 'Best H', 'Mean of Best H', 'Std of Best H']
     df = pd.DataFrame.from_records(results, columns=labels)
-    print df
+    print(df)
     return best_hyperparameter, population, df
 
 

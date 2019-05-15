@@ -53,7 +53,7 @@ if __name__ == "__main__":
     else:
         optimum = [[-1 * sys.maxint for var in variables], []] # Assuming that the problem is a maximization
     optimal_solution = backtracking(operation, variables, visited, optimum, data, type_of_wheels, companies, depth)
-    print optimal_solution[0]
-    print "Total: ", sum(optimal_solution[0])
-    print optimal_solution[1]
+    print(optimal_solution[0])
+    print("Total: ", sum(optimal_solution[0]))
+    print(optimal_solution[1])
 

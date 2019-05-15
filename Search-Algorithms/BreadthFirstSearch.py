@@ -47,7 +47,7 @@ if __name__ == "__main__":
             if_child = False
 
     moves.reverse()
-    print "Moves to get solution: "
+    print("Moves to get solution: ")
     for move in moves: print move + " -> ",
-    print "Solution"
+    print("Solution")
 

@@ -106,8 +106,8 @@ if __name__ == "__main__":
 
 
     FBA = Metabolic_ILP(S, c, lb, ub, range_steps=0.1)
-    print FBA.x
-    print FBA.solution_space
+    print(FBA.x)
+    print(FBA.solution_space)
 
     for vertex in FBA.solution_space:
-        print vertex, " valor Z = ", FBA.evaluate_solution(vertex)
+        print(vertex, " valor Z = ", FBA.evaluate_solution(vertex))
