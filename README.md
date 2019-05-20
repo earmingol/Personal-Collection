@@ -16,12 +16,12 @@ conda env export --no-builds | grep -v "prefix" > Conda-Environments/EnvName.yml
 conda deactivate
 ```
 
-## Content
+## Table of Contents
 - Search Algorithms:
     - Breadth First Search
     - Depth First Search
     - Optimization problems:
-        - Genetic Algorithm for finding optimal hyperparamets of an ANN
+        - Genetic Algorithm for finding optimal hyperparameters of an ANN
         - Integer Linear Programming for finding solution of an optimization of metabolic fluxes
         - Backtracking for optimizing the example of "Wheels Companies Problem"
         
@@ -29,4 +29,4 @@ conda deactivate
     - Jupyter Notebook with examples of plots made with Plotly
     
 - Statistical Analyses:
-    - Soon
+    - Coming soon
