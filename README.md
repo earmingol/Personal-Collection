@@ -17,16 +17,17 @@ conda deactivate
 ```
 
 ## Table of Contents
-- Search Algorithms:
-    - Breadth First Search
-    - Depth First Search
+- [Search Algorithms](./Search-Algorithms/):
+    - [Breadth First Search](./Search-Algorithms/BreadthFirstSearch.py)
+    - [Depth First Search](./Search-Algorithms/DepthFirstSearch.py)
     - Optimization problems:
-        - Genetic Algorithm for finding optimal hyperparameters of an ANN
-        - Integer Linear Programming for finding solution of an optimization of metabolic fluxes
-        - Backtracking for optimizing the example of "Wheels Companies Problem"
+        - [Genetic Algorithm for finding optimal hyper-parameters of an ANN](./Search-Algorithms/GeneticAlgorithm_ANN_architecture.py)
+        - [Integer Linear Programming for finding solution of an optimization of metabolic fluxes](./Search-Algorithms/Metabolic_ILP.py)
+        - [Backtracking for optimizing the example of "Wheels Companies Problem"](./Search-Algorithms/Wheels_Companies_problem.py)
         
-- Plots:
-    - Jupyter Notebook with examples of plots made with Plotly
+- [Plots](./Plots/):
+    - [Jupyter Notebook with examples of plots made with Plotly](./Plots/Plotly-Plots.ipynb)
     
-- Statistical Analyses:
-    - Coming soon
+- [Statistical Analyses](./StatisticalAnalysis/):
+    - [Principal Component Analysis](./StatisticalAnalysis/PCA/)
+    - More, coming soon
