@@ -28,6 +28,7 @@ conda deactivate
 - [Plots](./Plots/):
     - [Jupyter Notebook with examples of plots made with Plotly](./Plots/Plotly-Plots.ipynb)
     
-- [Statistical Analyses](./StatisticalAnalysis/):
-    - [Principal Component Analysis](./StatisticalAnalysis/PCA/)
+- [Statistical and Machine Learning Analyses](Stats&MachineLearning/):
+    - [Principal Component Analysis](Stats&MachineLearning/PCA/)
+    - [Enrichment Analysis](Stats&MachineLearning/Enrichment/)
     - More, coming soon
